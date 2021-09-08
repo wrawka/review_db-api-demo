@@ -14,16 +14,18 @@ class Comment(models.Model):
         'Дата публикации комментария', auto_now_add=True)
 
     def __str__(self) -> str:
-        return f'{self.text[20:]}... - {self.author}@{self.pub_date}'
+        return f'{self.text[20:]}[...] - {self.author}@{self.pub_date}'
 
 
 class Review(models.Model):
     text = models.TextField('Текст отзыва')
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='reviews')
+    title = models.ForeignKey(
+        "Title", on_delete=models.CASCADE, related_name='reviews')
     score = models.IntegerField('Оценка')
     pub_date = models.DateTimeField(
         'Дата публикации отзыва', auto_now_add=True)
 
     def __str__(self) -> str:
-        return f'{self.text[20:]}... - {self.author}@{self.pub_date}'
+        return f'{self.text[20:]}[...] - {self.author}@{self.pub_date}'

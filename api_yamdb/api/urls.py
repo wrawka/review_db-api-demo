@@ -5,8 +5,8 @@ from rest_framework.routers import DefaultRouter
 
 from .views import CommentViewSet, ReviewViewSet
 
-router = DefaultRouter()
 
+router = DefaultRouter()
 router.register(
     r'titles/(?P<title_id>\d+)/reviews',
     ReviewViewSet, basename='reviews')
@@ -15,6 +15,6 @@ router.register(
     CommentViewSet, basename='comments')
 
 urlpatterns = [
-    path('v1/', include(router.urls)),
     path('v1/api-token-auth/', views.obtain_auth_token),
+    path('v1/', include(router.urls)),
 ]
