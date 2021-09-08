@@ -1,12 +1,9 @@
-from reviews.models import Review, Title
-from django.shortcuts import render
 from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
 from rest_framework import filters, mixins, pagination, permissions, viewsets
+from reviews.models import Review, Title
+from users.models import User
+
 from . import serializers
-
-
-User = get_user_model()
 
 
 class CommentViewSet(viewsets.ModelViewSet):

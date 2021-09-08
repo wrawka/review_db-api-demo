@@ -1,8 +1,5 @@
-from django.contrib.auth import get_user_model
-from reviews.models import Comment, Review
 from rest_framework import serializers, validators
-
-User = get_user_model()
+from reviews.models import Comment, Review
 
 
 class CommentSerializer(serializers.ModelSerializer):
