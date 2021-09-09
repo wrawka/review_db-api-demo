@@ -54,7 +54,7 @@ class SendConfirCodeViewSet(generics.ListCreateAPIView):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CommentSerializer
-    # pagination_class = pagination.LimitOffsetPagination
+    pagination_class = pagination.LimitOffsetPagination
     # permission_classes = [ ... ]
 
     def get_queryset(self):
@@ -74,7 +74,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
-    # pagination_class = pagination.LimitOffsetPagination
+    pagination_class = pagination.LimitOffsetPagination
     # permission_classes = [ ... ]
 
     def get_queryset(self):
