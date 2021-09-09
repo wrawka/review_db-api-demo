@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.validators import RegexValidator
+
 
 
 class Genre(models.Model):
@@ -11,10 +13,19 @@ class Genre(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=256)
-    slug = models.SlugField(max_length=50, unique=True)
+    slug = models.SlugField(
+        max_length=50,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[-a-zA-Z0-9_]+$',
+                message='Только буквы и цифры!'
+            )
+        ]
+    )
 
     def __str__(self):
-        return self.name
+        return self.slug
 
 
 class Title(models.Model):

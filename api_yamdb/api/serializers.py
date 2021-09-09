@@ -5,8 +5,26 @@ import datetime as dt
 from reviews.models import Title, Genre, Category
 
 
+class GenreSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Genre
+        fields = ('id', 'name', 'slug')
+        lookup_field = 'slug'
+
+
+class CategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Category
+        fields = ('id', 'name', 'slug')
+        lookup_field = 'slug'
+
+
 class TitleSerializer(serializers.ModelSerializer):
     score = serializers.SerializerMethodField()
+    genre = GenreSerializer(many=True, read_only=True)
+    category = serializers.StringRelatedField()
 
     class Meta:
         model = Title
@@ -22,15 +40,4 @@ class TitleSerializer(serializers.ModelSerializer):
         pass
 
 
-class GenreSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = Genre
-        fields = ('id', 'name', 'slug')
-
-
-class CategorySerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Category
-        fields = ('id', 'name', 'slug')
