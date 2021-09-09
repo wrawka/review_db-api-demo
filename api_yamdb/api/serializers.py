@@ -21,6 +21,10 @@ class ReviewSerializer(serializers.ModelSerializer):
     title = serializers.SlugRelatedField(
         read_only=True, slug_field='pk')
 
+    def validate_score(self, value):
+        if value not in range(1, 11):
+            raise serializers.ValidationError('Оценка может быть от 1 до 10.')
+
     class Meta:
         model = Review
         fields = '__all__'
