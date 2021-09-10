@@ -3,6 +3,7 @@ from users.models import User, Registration, JWTToken
 from reviews.models import Comment, Review, Title, Genre, Category
 import datetime as dt
 
+
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:

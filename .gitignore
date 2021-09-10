@@ -148,3 +148,6 @@ dmypy.json
 # папки со статикой и медиа
 media/
 
+# дополнительно
+api_yamdb\api\import.py
+api_yamdb\reviews\management\commands\load_csv_into_db.py

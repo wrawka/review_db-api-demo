@@ -1,19 +1,13 @@
-from rest_framework import viewsets
-from users.models import User, Registration, JWTToken
-from api.serializers import UserSerializer, RegistrationSerializer,\
-    SendConfirCodeSerializer
 from random import randint
-from rest_framework import generics
+from rest_framework import filters, mixins, pagination, permissions, viewsets, generics
 from rest_framework.permissions import AllowAny, IsAdminUser
-from api.permissions import UserPermission, ModeratorPermission
 
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (DjangoFilterBackend,
                                            FilterSet, CharFilter)
-from rest_framework import filters, mixins, pagination, permissions, viewsets
-from .serializers import TitleSerializer, GenreSerializer, CategorySerializer
-from reviews.models import Review, Title, Title, Genre, Category
-from users.models import User
+from reviews.models import Review, Title, Genre, Category
+from users.models import User, Registration, JWTToken
+from .permissions import UserPermission, ModeratorPermission
 
 from . import serializers
 
@@ -28,13 +22,13 @@ permission_classes_by_role = {
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = serializers.UserSerializer
     lookup_field = 'username'
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
     queryset = Registration.objects.all()
-    serializer_class = RegistrationSerializer
+    serializer_class = serializers.RegistrationSerializer
     http_method_names = ['post']
 
     def perform_create(self, serializer):
@@ -47,7 +41,7 @@ class RegistrationViewSet(generics.ListCreateAPIView):
 
 class SendConfirCodeViewSet(generics.ListCreateAPIView):
     queryset = JWTToken.objects.all()
-    serializer_class = SendConfirCodeSerializer
+    serializer_class = serializers.SendConfirCodeSerializer
     http_method_names = ['post']
 
     def perform_create(self, serializer):
@@ -114,7 +108,7 @@ class TitlesFilter(FilterSet):
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
-    serializer_class = TitleSerializer
+    serializer_class = serializers.TitleSerializer
     filter_backends = (DjangoFilterBackend,)
     pagination_class = None
     filterset_class = TitlesFilter
@@ -122,7 +116,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class GenreViewSet(CreateRetrieveDestroyViewSet):
     queryset = Genre.objects.all()
-    serializer_class = GenreSerializer
+    serializer_class = serializers.GenreSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -131,7 +125,7 @@ class GenreViewSet(CreateRetrieveDestroyViewSet):
 
 class CategoryViewSet(CreateRetrieveDestroyViewSet):
     queryset = Category.objects.all()
-    serializer_class = CategorySerializer
+    serializer_class = serializers.CategorySerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
