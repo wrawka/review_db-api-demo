@@ -119,6 +119,9 @@ class TitleViewSet(viewsets.ModelViewSet):
     pagination_class = None
     filterset_class = TitlesFilter
 
+    def retrieve(self, request, *args, **kwargs):
+        #Расчет рейтинга тайтла про GET запросе
+
 
 class GenreViewSet(CreateRetrieveDestroyViewSet):
     queryset = Genre.objects.all()
