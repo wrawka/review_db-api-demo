@@ -1,61 +1,117 @@
-from rest_framework import viewsets
-from users.models import User, Registration, JWTToken
-from api.serializers import UserSerializer, RegistrationSerializer,\
-    SendConfirCodeSerializer
 from random import randint
-from rest_framework import generics
-from rest_framework.permissions import AllowAny, IsAdminUser
-from api.permissions import UserPermission, ModeratorPermission
 
+from api.permissions import ModeratorPermission, UserPermission
+from api.serializers import (TokenSerializer,
+                             UserSerializer)
+from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import (DjangoFilterBackend,
-                                           FilterSet, CharFilter)
-from rest_framework import filters, mixins, pagination, permissions, viewsets
-from .serializers import TitleSerializer, GenreSerializer, CategorySerializer
-from reviews.models import Review, Title, Title, Genre, Category
-from users.models import User
+from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
+                                           FilterSet)
+from rest_framework import (filters, generics, mixins, pagination, permissions,
+                            viewsets)
+from rest_framework.permissions import AllowAny, IsAdminUser
+from reviews.models import Category, Genre, Review, Title
+from users.models import Code, User
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from . import serializers
+from .serializers import CategorySerializer, GenreSerializer, TitleSerializer,\
+    RegistrationSerializer
+from rest_framework.response import Response
+from django.http import HttpResponse
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
 
-# TODO: поправить импорты!
-
-permission_classes_by_role = {
+permission_by_role = {
     'user': UserPermission,
     'moderator': ModeratorPermission,
     'admin': AllowAny
 }
 
 
+def permission_class_by_role(request):
+    if request.user.is_anonymous:
+        return DjangoModelPermissionsOrAnonReadOnly
+
+    role = request.user.role
+    if role in permission_by_role:
+        return permission_by_role[role]
+    elif request.user.is_superuser:
+        return IsAdminUser
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'access': str(refresh.access_token),
+    }
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = 'username'
+    pagination_class = PageNumberPagination
+
+    def get_permissions(self):
+        #permission_classes = [permission_by_role[self.request]]
+        #return [permission() for permission in permission_classes]
+        self.permission_classes = [permission_by_role[self.request]]
+        return super(UserViewSet, self).get_permissions()
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
-    queryset = Registration.objects.all()
+    queryset = User.objects.all()
     serializer_class = RegistrationSerializer
     http_method_names = ['post']
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        confirmation_code = randint(1000, 9999)
-
+        confirmation_code = str(randint(1000, 9999))
+        send_mail(
+            'Confirmation code for registration',
+            f'{confirmation_code}',
+            'from@example.com',
+            [serializer.validated_data['email']],
+            fail_silently=False,
+        )
         serializer.save(
+            role='user',
             confirmation_code=confirmation_code
         )
+        #User.objects.create(
+        #    username=serializer.validated_data['username'],
+        #    email=serializer.validated_data['email'],
+        #    role='user',
+        #    confirmation_code=confirmation_code
+        #)
+        #Registration.objects.create(
+        #    username=serializer.validated_data['username'],
+        #    confirmation_code=confirmation_code
+        #)
 
 
-class SendConfirCodeViewSet(generics.ListCreateAPIView):
-    queryset = JWTToken.objects.all()
-    serializer_class = SendConfirCodeSerializer
+class APITokenView(APIView):
     http_method_names = ['post']
+    permission_classes = [AllowAny]
 
-    def perform_create(self, serializer):
-        User.objects.create(
-            username=self.request.user.username,
-            role='user'
+    def post(self, request):
+        serializer = TokenSerializer(data=request.data)
+        if serializer.is_valid():
+            user = get_object_or_404(
+                User,
+                username=serializer.validated_data['username']
+            )
+            if user.confirmation_code == serializer.validated_data['confirmation_code']:
+                return Response(get_tokens_for_user(user),
+                                status=status.HTTP_200_OK)
+        return Response(
+            {'Код введен неверно. Повторите попытку.'},
+            status=status.HTTP_400_BAD_REQUEST
         )
-        serializer.save()
 
 
 class CommentViewSet(viewsets.ModelViewSet):

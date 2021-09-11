@@ -1,9 +1,7 @@
 from django.contrib.auth.models import AbstractUser
-# from django.contrib.auth import get_user_model
 from django.db import models
-
-# User = get_user_model()
-
+from rest_framework.response import Response
+from rest_framework import status
 
 
 class User(AbstractUser):
@@ -17,20 +15,32 @@ class User(AbstractUser):
         blank=True,
         null=True,
     )
-
-
-class Registration(models.Model):
-    username = models.TextField(
-        unique=True,
-        blank=False,
-        null=False,
-        max_length=150
+    confirmation_code = models.PositiveIntegerField(
+        'Code',
+        blank=True,
+        null=True,
     )
-    email = models.EmailField('Email', unique=True, max_length=254)
-    confirmation_code = models.PositiveIntegerField('Code')
+
+    def clean(self):
+        if self.username == 'me':
+            Response(
+                {'Пожалуйста, выберите другой username.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
-class JWTToken(models.Model):
+#class Registration(models.Model):
+#    username = models.TextField(
+#        unique=True,
+#        blank=False,
+#        null=False,
+#        max_length=150
+#    )
+#    email = models.EmailField('Email', unique=True, max_length=254)
+#    confirmation_code = models.PositiveIntegerField('Code')
+
+
+class Code(models.Model):
     username = models.TextField(
         unique=True,
         blank=False,
