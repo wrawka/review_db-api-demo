@@ -54,7 +54,7 @@ class SendConfirCodeViewSet(generics.ListCreateAPIView):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CommentSerializer
-    pagination_class = pagination.LimitOffsetPagination
+    # pagination_class = pagination.LimitOffsetPagination
     # permission_classes = [ ... ]
 
     def get_queryset(self):
@@ -74,7 +74,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
-    pagination_class = pagination.LimitOffsetPagination
+    # pagination_class = pagination.LimitOffsetPagination
     # permission_classes = [ ... ]
 
     def get_queryset(self):
@@ -109,16 +109,19 @@ class TitlesFilter(FilterSet):
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = serializers.TitleSerializer
+    # pagination_class = pagination.LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
     pagination_class = None
     filterset_class = TitlesFilter
 
     def retrieve(self, request, *args, **kwargs):
         #Расчет рейтинга тайтла про GET запросе
+        pass
 
 
 class GenreViewSet(CreateRetrieveDestroyViewSet):
     queryset = Genre.objects.all()
+    # pagination_class = pagination.LimitOffsetPagination
     serializer_class = serializers.GenreSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -128,6 +131,7 @@ class GenreViewSet(CreateRetrieveDestroyViewSet):
 
 class CategoryViewSet(CreateRetrieveDestroyViewSet):
     queryset = Category.objects.all()
+    # pagination_class = pagination.LimitOffsetPagination
     serializer_class = serializers.CategorySerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
