@@ -57,10 +57,8 @@ class UserViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
 
     def get_permissions(self):
-        #permission_classes = [permission_by_role[self.request]]
-        #return [permission() for permission in permission_classes]
-        self.permission_classes = [permission_by_role[self.request]]
-        return super(UserViewSet, self).get_permissions()
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
@@ -133,6 +131,10 @@ class CommentViewSet(viewsets.ModelViewSet):
         review = get_object_or_404(Review, pk=review_id, title=title)
         serializer.save(title=title, review=review, author=self.request.user)
 
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
@@ -148,6 +150,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title_id = self.kwargs.get('title_id')
         title = get_object_or_404(Title, pk=title_id)
         serializer.save(title=title, author=self.request.user)
+
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
 
 
 class CreateRetrieveDestroyViewSet(
@@ -167,6 +173,10 @@ class TitlesFilter(FilterSet):
         model = Title
         fields = ('category', 'genre', 'name', 'year')
 
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
+
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
@@ -176,9 +186,9 @@ class TitleViewSet(viewsets.ModelViewSet):
     pagination_class = None
     filterset_class = TitlesFilter
 
-    def retrieve(self, request, *args, **kwargs):
-        #Расчет рейтинга тайтла про GET запросе
-        pass
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
 
 
 class GenreViewSet(CreateRetrieveDestroyViewSet):
@@ -190,6 +200,10 @@ class GenreViewSet(CreateRetrieveDestroyViewSet):
     lookup_field = 'slug'
     lookup_value_regex = '[^/]+'
 
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
+
 
 class CategoryViewSet(CreateRetrieveDestroyViewSet):
     queryset = Category.objects.all()
@@ -199,3 +213,7 @@ class CategoryViewSet(CreateRetrieveDestroyViewSet):
     search_fields = ('name',)
     lookup_field = 'slug'
     lookup_value_regex = '[^/]+'
+
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
