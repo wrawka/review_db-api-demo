@@ -6,6 +6,8 @@ import datetime as dt
 
 class UserSerializer(serializers.ModelSerializer):
 
+    role = serializers.CharField(default='user')
+
     class Meta:
         fields = ('username', 'email', 'first_name', 'last_name', 'bio',
                   'role')

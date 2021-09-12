@@ -1,6 +1,6 @@
 from random import randint
 
-from api.permissions import ModeratorPermission, UserPermission
+from api.permissions import ModeratorPermission, UserPermission, AnonymousPermission
 from api.serializers import (TokenSerializer,
                              UserSerializer)
 from django.core.mail import send_mail
@@ -33,13 +33,13 @@ permission_by_role = {
 
 def permission_class_by_role(request):
     if request.user.is_anonymous:
-        return DjangoModelPermissionsOrAnonReadOnly
+        return AnonymousPermission
 
     role = request.user.role
     if role in permission_by_role:
         return permission_by_role[role]
     elif request.user.is_superuser:
-        return IsAdminUser
+        return AllowAny
 
 
 def get_tokens_for_user(user):
@@ -54,11 +54,18 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = 'username'
-    pagination_class = PageNumberPagination
 
     def get_permissions(self):
         permission_classes = [permission_class_by_role(self.request)]
         return [permission() for permission in permission_classes]
+
+    def permorf_create(self, serializer):
+        username = self.kwargs.get('username')
+        if username == 'me':
+            username = self.request.user.username
+            serializer.save(username=username)
+        else:
+            serializer.save()
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
@@ -80,6 +87,16 @@ class RegistrationViewSet(generics.ListCreateAPIView):
             role='user',
             confirmation_code=confirmation_code
         )
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK,
+                        headers=headers)
+
+
         #User.objects.create(
         #    username=serializer.validated_data['username'],
         #    email=serializer.validated_data['email'],
@@ -104,6 +121,9 @@ class APITokenView(APIView):
                 username=serializer.validated_data['username']
             )
             if user.confirmation_code == serializer.validated_data['confirmation_code']:
+                return Response(get_tokens_for_user(user),
+                                status=status.HTTP_200_OK)
+            elif user.is_superuser:
                 return Response(get_tokens_for_user(user),
                                 status=status.HTTP_200_OK)
         return Response(
