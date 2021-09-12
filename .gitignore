@@ -152,3 +152,4 @@ media/
 api_yamdb\api\import.py
 api_yamdb\reviews\management\commands\load_csv_into_db.py
 tests.http
+api_yamdb/*/migrations/

@@ -183,7 +183,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.TitleSerializer
     # pagination_class = pagination.LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
-    pagination_class = None
     filterset_class = TitlesFilter
 
     def get_permissions(self):
