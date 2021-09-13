@@ -1,6 +1,6 @@
 from random import randint
 
-from api.permissions import ModeratorPermission, UserPermission, AnonymousPermission
+from api.permissions import ReadOnly, IsAdmin, IsModerator, IsAuthorOrReadOnly
 from api.serializers import (TokenSerializer,
                              UserSerializer)
 from django.core.mail import send_mail
@@ -9,7 +9,7 @@ from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
                                            FilterSet)
 from rest_framework import (filters, generics, mixins, pagination, permissions,
                             viewsets)
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from reviews.models import Category, Genre, Review, Title
 from users.models import Code, User
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -22,24 +22,7 @@ from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
-
-permission_by_role = {
-    'user': UserPermission,
-    'moderator': ModeratorPermission,
-    'admin': AllowAny
-}
-
-
-def permission_class_by_role(request):
-    if request.user.is_anonymous:
-        return AnonymousPermission
-    elif request.user.is_superuser:
-        return AllowAny
-
-    role = request.user.role
-    if role in permission_by_role:
-        return permission_by_role[role]
+from rest_framework.decorators import action
 
 
 def get_tokens_for_user(user):
@@ -54,10 +37,11 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = serializers.UserSerializer
     lookup_field = 'username'
+    permission_classes = [IsAdmin]
 
     def get_queryset(self):
         username = self.kwargs.get('username')
-        if username == 'me'
+        if username == 'me':
             queryset = User.objects.filter(username=self.request.user.username)
 
             return queryset
@@ -65,9 +49,9 @@ class UserViewSet(viewsets.ModelViewSet):
         queryset = User.objects.all()
         return queryset
 
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
+    # @action(detail=..., methods=[...])
+    # def me(self, request):
+    #     pass
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
@@ -137,7 +121,7 @@ class APITokenView(APIView):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CommentSerializer
     pagination_class = pagination.LimitOffsetPagination
-    # permission_classes = [ ... ]
+    permission_classes = [IsAdmin|IsModerator|IsAuthorOrReadOnly]
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -153,15 +137,11 @@ class CommentViewSet(viewsets.ModelViewSet):
         review = get_object_or_404(Review, pk=review_id, title=title)
         serializer.save(title=title, review=review, author=self.request.user)
 
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
-
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
     pagination_class = pagination.LimitOffsetPagination
-    # permission_classes = [ ... ]
+    permission_classes = [IsAdmin|IsModerator|IsAuthenticated|IsAuthorOrReadOnly]
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -172,10 +152,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title_id = self.kwargs.get('title_id')
         title = get_object_or_404(Title, pk=title_id)
         serializer.save(title=title, author=self.request.user)
-
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
 
 
 class CreateRetrieveDestroyViewSet(
@@ -195,46 +171,33 @@ class TitlesFilter(FilterSet):
         model = Title
         fields = ('category', 'genre', 'name', 'year')
 
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
-
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = serializers.TitleSerializer
-    # pagination_class = pagination.LimitOffsetPagination
+    pagination_class = pagination.LimitOffsetPagination
+    permission_classes = [IsAdmin|ReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitlesFilter
-
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
 
 
 class GenreViewSet(CreateRetrieveDestroyViewSet):
     queryset = Genre.objects.all()
-    # pagination_class = pagination.LimitOffsetPagination
+    pagination_class = pagination.LimitOffsetPagination
+    permission_classes = [IsAdmin|ReadOnly]
     serializer_class = serializers.GenreSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
     lookup_value_regex = '[^/]+'
 
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
-
 
 class CategoryViewSet(CreateRetrieveDestroyViewSet):
     queryset = Category.objects.all()
-    # pagination_class = pagination.LimitOffsetPagination
+    pagination_class = pagination.LimitOffsetPagination
+    permission_classes = [IsAdmin|ReadOnly]
     serializer_class = serializers.CategorySerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
     lookup_value_regex = '[^/]+'
-
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
