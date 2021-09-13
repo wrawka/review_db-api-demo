@@ -1,29 +1,53 @@
-from rest_framework import viewsets
-from users.models import User, Registration, JWTToken
-from api.serializers import UserSerializer, RegistrationSerializer,\
-    SendConfirCodeSerializer
 from random import randint
-from rest_framework import generics
-from rest_framework.permissions import AllowAny, IsAdminUser
-from api.permissions import UserPermission, ModeratorPermission
 
+from api.permissions import ModeratorPermission, UserPermission, AnonymousPermission
+from api.serializers import (TokenSerializer,
+                             UserSerializer)
+from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import (DjangoFilterBackend,
-                                           FilterSet, CharFilter)
-from rest_framework import filters, mixins, pagination, permissions, viewsets
-from .serializers import TitleSerializer, GenreSerializer, CategorySerializer
-from reviews.models import Review, Title, Title, Genre, Category
-from users.models import User
+from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
+                                           FilterSet)
+from rest_framework import (filters, generics, mixins, pagination, permissions,
+                            viewsets)
+from rest_framework.permissions import AllowAny, IsAdminUser
+from reviews.models import Category, Genre, Review, Title
+from users.models import Code, User
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from . import serializers
+from .serializers import CategorySerializer, GenreSerializer, TitleSerializer,\
+    RegistrationSerializer
+from rest_framework.response import Response
+from django.http import HttpResponse
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import DjangoModelPermissionsOrAnonReadOnly
 
-# TODO: поправить импорты!
-
-permission_classes_by_role = {
+permission_by_role = {
     'user': UserPermission,
     'moderator': ModeratorPermission,
     'admin': AllowAny
 }
+
+
+def permission_class_by_role(request):
+    if request.user.is_anonymous:
+        return AnonymousPermission
+    elif request.user.is_superuser:
+        return AllowAny
+
+    role = request.user.role
+    if role in permission_by_role:
+        return permission_by_role[role]
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'access': str(refresh.access_token),
+    }
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -31,31 +55,83 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     lookup_field = 'username'
 
+    def get_queryset(self):
+        username = self.kwargs.get('username')
+        if username == 'me'
+            queryset = User.objects.filter(username=self.request.user.username)
+
+            return queryset
+
+        queryset = User.objects.all()
+        return queryset
+
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
+
 
 class RegistrationViewSet(generics.ListCreateAPIView):
-    queryset = Registration.objects.all()
+    queryset = User.objects.all()
     serializer_class = RegistrationSerializer
     http_method_names = ['post']
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        confirmation_code = randint(1000, 9999)
-
+        confirmation_code = str(randint(1000, 9999))
+        send_mail(
+            'Confirmation code for registration',
+            f'{confirmation_code}',
+            'from@example.com',
+            [serializer.validated_data['email']],
+            fail_silently=False,
+        )
         serializer.save(
+            role='user',
             confirmation_code=confirmation_code
         )
 
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK,
+                        headers=headers)
 
-class SendConfirCodeViewSet(generics.ListCreateAPIView):
-    queryset = JWTToken.objects.all()
-    serializer_class = SendConfirCodeSerializer
+
+        #User.objects.create(
+        #    username=serializer.validated_data['username'],
+        #    email=serializer.validated_data['email'],
+        #    role='user',
+        #    confirmation_code=confirmation_code
+        #)
+        #Registration.objects.create(
+        #    username=serializer.validated_data['username'],
+        #    confirmation_code=confirmation_code
+        #)
+
+
+class APITokenView(APIView):
     http_method_names = ['post']
+    permission_classes = [AllowAny]
 
-    def perform_create(self, serializer):
-        User.objects.create(
-            username=self.request.user.username,
-            role='user'
+    def post(self, request):
+        serializer = TokenSerializer(data=request.data)
+        if serializer.is_valid():
+            user = get_object_or_404(
+                User,
+                username=serializer.validated_data['username']
+            )
+            if user.confirmation_code == serializer.validated_data['confirmation_code']:
+                return Response(get_tokens_for_user(user),
+                                status=status.HTTP_200_OK)
+            elif user.is_superuser:
+                return Response(get_tokens_for_user(user),
+                                status=status.HTTP_200_OK)
+        return Response(
+            {'Код введен неверно. Повторите попытку.'},
+            status=status.HTTP_400_BAD_REQUEST
         )
-        serializer.save()
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -77,6 +153,10 @@ class CommentViewSet(viewsets.ModelViewSet):
         review = get_object_or_404(Review, pk=review_id, title=title)
         serializer.save(title=title, review=review, author=self.request.user)
 
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
@@ -92,6 +172,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title_id = self.kwargs.get('title_id')
         title = get_object_or_404(Title, pk=title_id)
         serializer.save(title=title, author=self.request.user)
+
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
 
 
 class CreateRetrieveDestroyViewSet(
@@ -111,6 +195,10 @@ class TitlesFilter(FilterSet):
         model = Title
         fields = ('category', 'genre', 'name', 'year')
 
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
+
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
@@ -118,6 +206,10 @@ class TitleViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     pagination_class = None
     filterset_class = TitlesFilter
+
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
 
 
 class GenreViewSet(CreateRetrieveDestroyViewSet):
@@ -128,6 +220,10 @@ class GenreViewSet(CreateRetrieveDestroyViewSet):
     lookup_field = 'slug'
     lookup_value_regex = '[^/]+'
 
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]
+
 
 class CategoryViewSet(CreateRetrieveDestroyViewSet):
     queryset = Category.objects.all()
@@ -136,3 +232,7 @@ class CategoryViewSet(CreateRetrieveDestroyViewSet):
     search_fields = ('name',)
     lookup_field = 'slug'
     lookup_value_regex = '[^/]+'
+
+    def get_permissions(self):
+        permission_classes = [permission_class_by_role(self.request)]
+        return [permission() for permission in permission_classes]

@@ -1,9 +1,12 @@
 from rest_framework import serializers, validators
-from users.models import User, Registration, JWTToken
+from users.models import User, Code, CHOICES
 from reviews.models import Comment, Review, Title, Genre, Category
 import datetime as dt
 
+
 class UserSerializer(serializers.ModelSerializer):
+
+    role = serializers.ChoiceField(choices=CHOICES, default='user')
 
     class Meta:
         fields = ('username', 'email', 'first_name', 'last_name', 'bio',
@@ -15,14 +18,14 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = ('username', 'email',)
-        model = Registration
+        model = User
 
 
-class SendConfirCodeSerializer(serializers.ModelSerializer):
+class TokenSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = ('username', 'confirmation_code',)
-        model = JWTToken
+        model = Code
 
 
 class CommentSerializer(serializers.ModelSerializer):
