@@ -54,7 +54,16 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = serializers.UserSerializer
     lookup_field = 'username'
-    pagination_class = PageNumberPagination
+
+    def get_queryset(self):
+        username = self.kwargs.get('username')
+        if username == 'me'
+            queryset = User.objects.filter(username=self.request.user.username)
+
+            return queryset
+
+        queryset = User.objects.all()
+        return queryset
 
     def get_permissions(self):
         permission_classes = [permission_class_by_role(self.request)]
