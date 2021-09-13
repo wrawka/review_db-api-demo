@@ -57,7 +57,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         username = self.kwargs.get('username')
-        if username == 'me':
+        if username == 'me'
             queryset = User.objects.filter(username=self.request.user.username)
 
             return queryset
