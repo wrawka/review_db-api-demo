@@ -34,12 +34,12 @@ permission_by_role = {
 def permission_class_by_role(request):
     if request.user.is_anonymous:
         return AnonymousPermission
+    elif request.user.is_superuser:
+        return AllowAny
 
     role = request.user.role
     if role in permission_by_role:
         return permission_by_role[role]
-    elif request.user.is_superuser:
-        return AllowAny
 
 
 def get_tokens_for_user(user):
@@ -55,17 +55,19 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     lookup_field = 'username'
 
+    def get_queryset(self):
+        username = self.kwargs.get('username')
+        if username == 'me':
+            queryset = User.objects.filter(username=self.request.user.username)
+
+            return queryset
+
+        queryset = User.objects.all()
+        return queryset
+
     def get_permissions(self):
         permission_classes = [permission_class_by_role(self.request)]
         return [permission() for permission in permission_classes]
-
-    def permorf_create(self, serializer):
-        username = self.kwargs.get('username')
-        if username == 'me':
-            username = self.request.user.username
-            serializer.save(username=username)
-        else:
-            serializer.save()
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):

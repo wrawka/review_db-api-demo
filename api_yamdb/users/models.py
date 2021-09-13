@@ -11,6 +11,12 @@ def username_validator(name):
     else:
         return name
 
+CHOICES = (
+    ('user', 'юзер'),
+    ('moderator', 'модераторв'),
+    ('admin', 'админ')
+)
+
 
 class User(AbstractUser):
     username = models.CharField(
@@ -33,6 +39,7 @@ class User(AbstractUser):
         'Роль',
         blank=True,
         null=True,
+        choices=CHOICES,
     )
     confirmation_code = models.PositiveIntegerField(
         'Code',
