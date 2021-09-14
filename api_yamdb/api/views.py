@@ -17,7 +17,7 @@ from users.models import Code, User
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from . import serializers
-from .serializers import CategorySerializer, GenreSerializer, TitleSerializer,\
+from .serializers import CategorySerializer, GenreSerializer, SelfSerializer, TitleSerializer,\
     RegistrationSerializer
 from rest_framework.response import Response
 from django.http import HttpResponse
@@ -44,8 +44,17 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'patch'], permission_classes=[IsAuthenticated])
     def me(self, request):
         user = request.user
-        serializer = self.get_serializer(user)
-        return Response(serializer.data)
+        if request.method == 'GET':
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+        elif request.method == 'PATCH':
+            serializer = SelfSerializer(user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors)
+
+
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
@@ -135,7 +144,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
     pagination_class = pagination.LimitOffsetPagination
-    permission_classes = [IsAdmin|IsModerator|IsAuthenticated|IsAuthorOrReadOnly]
+    permission_classes = [IsAuthorOrReadOnly|IsAuthenticated|IsModerator|IsAdmin]
     # permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):

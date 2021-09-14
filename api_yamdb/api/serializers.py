@@ -4,6 +4,14 @@ from reviews.models import Comment, Review, Title, Genre, Category
 import datetime as dt
 
 
+class SelfSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('username', 'email', 'first_name', 'last_name', 'bio')
+        read_only_fields = ('role',)
+        model = User
+
+
 class UserSerializer(serializers.ModelSerializer):
 
     role = serializers.ChoiceField(choices=CHOICES, default='user')
@@ -11,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('username', 'email', 'first_name', 'last_name', 'bio',
                   'role')
+        read_only_fields = ('role',)
         model = User
 
 
@@ -47,11 +56,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     title = serializers.SlugRelatedField(
         read_only=True, slug_field='id', default=0)
 
-    def validate_score(self, value):
-        if value not in range(1, 11):
-            raise serializers.ValidationError('Оценка может быть от 1 до 10.')
-        return value
-
     class Meta:
         model = Review
         fields = '__all__'
@@ -59,9 +63,14 @@ class ReviewSerializer(serializers.ModelSerializer):
         validators = [
             validators.UniqueTogetherValidator(
                 queryset=Review.objects.all(),
-                fields=('author', 'title')
+                fields=['author', 'title']
             )
         ]
+
+    def validate_score(self, value):
+        if value not in range(1, 11):
+            raise serializers.ValidationError('Оценка может быть от 1 до 10.')
+        return value
 
 
 class GenreSerializer(serializers.ModelSerializer):
