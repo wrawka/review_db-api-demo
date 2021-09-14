@@ -57,10 +57,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class GenreSerializer(serializers.ModelSerializer):
+    queryset = Genre.objects.all()
 
     class Meta:
         model = Genre
-        fields = ('id', 'name', 'slug')
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
 
@@ -68,14 +69,14 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ('id', 'name', 'slug')
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
 
 class TitleSerializer(serializers.ModelSerializer):
     score = serializers.SerializerMethodField()
-    genre = GenreSerializer(many=True, read_only=True)
-    category = serializers.StringRelatedField()
+    genre = serializers.SlugRelatedField(queryset=Genre.objects.all(), slug_field='slug', many=True)
+    category = serializers.SlugRelatedField(queryset=Category.objects.all(), slug_field='slug')
 
     class Meta:
         model = Title
@@ -86,6 +87,25 @@ class TitleSerializer(serializers.ModelSerializer):
         if not value <= year:
             raise serializers.ValidationError('Год не может быть будущим!')
         return value
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response['category'] = CategorySerializer(instance.category).data
+        # genres = []
+        # for genre in response['genre']:
+        #     pass
+        #     # print(dir(GenreSerializer(genre)))
+        #     print(GenreSerializer(genre).data)
+        # print('!')
+        return response
+
+    # def to_internal_value(self, data):
+    #     self.fields['slug'] = serializers.SlugRelatedField(
+    #         queryset=Category.objects.all(),
+    #         slug_field='slug'
+    #     )
+    #     return super(TitleSerializer, self).to_internal_value(data)
+
 
     def get_score(self, obj):
         pass

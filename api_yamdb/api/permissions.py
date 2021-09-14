@@ -23,6 +23,7 @@ class ModeratorPermission(UserPermission):
         return request.method in permissions.SAFE_METHODS\
             or obj.author == request.user or obj.author != request.user
 
+
 class AnonymousPermission(UserPermission):
     def has_permission(self, request, view):
         if ('reviews/' or 'comments/' or 'categories/') in request.get_full_path() and \

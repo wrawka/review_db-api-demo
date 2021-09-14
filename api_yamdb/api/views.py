@@ -57,7 +57,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         username = self.kwargs.get('username')
-        if username == 'me'
+        if username == 'me':
             queryset = User.objects.filter(username=self.request.user.username)
 
             return queryset
@@ -204,12 +204,11 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
     filter_backends = (DjangoFilterBackend,)
-    pagination_class = None
     filterset_class = TitlesFilter
 
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
+    # def get_permissions(self):
+    #     permission_classes = [permission_class_by_role(self.request)]
+    #     return [permission() for permission in permission_classes]
 
 
 class GenreViewSet(CreateRetrieveDestroyViewSet):
@@ -220,9 +219,9 @@ class GenreViewSet(CreateRetrieveDestroyViewSet):
     lookup_field = 'slug'
     lookup_value_regex = '[^/]+'
 
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
+    # def get_permissions(self):
+    #     permission_classes = [permission_class_by_role(self.request)]
+    #     return [permission() for permission in permission_classes]
 
 
 class CategoryViewSet(CreateRetrieveDestroyViewSet):
@@ -233,6 +232,6 @@ class CategoryViewSet(CreateRetrieveDestroyViewSet):
     lookup_field = 'slug'
     lookup_value_regex = '[^/]+'
 
-    def get_permissions(self):
-        permission_classes = [permission_class_by_role(self.request)]
-        return [permission() for permission in permission_classes]
+    # def get_permissions(self):
+    #     permission_classes = [permission_class_by_role(self.request)]
+    #     return [permission() for permission in permission_classes]
