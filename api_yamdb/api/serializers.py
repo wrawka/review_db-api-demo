@@ -51,9 +51,9 @@ class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username')
     title = serializers.SlugRelatedField(
-        read_only=True, slug_field='pk')
+        read_only=True, slug_field='id')
     review = serializers.SlugRelatedField(
-        read_only=True, slug_field='pk')
+        read_only=True, slug_field='id')
 
     class Meta:
         model = Comment
@@ -64,7 +64,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username', default=serializers.CurrentUserDefault())
     title = serializers.SlugRelatedField(
-        read_only=True, slug_field='pk')
+        read_only=True, slug_field='id')
 
     def validate_score(self, value):
         if value not in range(1, 11):
