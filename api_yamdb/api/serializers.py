@@ -60,6 +60,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     def validate_score(self, value):
         if value not in range(1, 11):
             raise serializers.ValidationError('Оценка может быть от 1 до 10.')
+        return value
 
     class Meta:
         model = Review
