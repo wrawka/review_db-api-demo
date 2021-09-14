@@ -1,5 +1,7 @@
 from random import randint
 
+from rest_framework.serializers import Serializer
+
 from api.permissions import ReadOnly, IsAdmin, IsModerator, IsAuthorOrReadOnly
 from api.serializers import (TokenSerializer,
                              UserSerializer)
@@ -22,7 +24,7 @@ from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes
 
 
 def get_tokens_for_user(user):
@@ -39,19 +41,11 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
     permission_classes = [IsAdmin]
 
-    def get_queryset(self):
-        username = self.kwargs.get('username')
-        if username == 'me':
-            queryset = User.objects.filter(username=self.request.user.username)
-
-            return queryset
-
-        queryset = User.objects.all()
-        return queryset
-
-    # @action(detail=..., methods=[...])
-    # def me(self, request):
-    #     pass
+    @action(detail=False, methods=['get', 'patch'], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        user = request.user
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
