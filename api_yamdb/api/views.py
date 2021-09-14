@@ -1,7 +1,7 @@
 from random import randint
 
 from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly, IsMeRequest
-from api.serializers import TokenSerializer, UserSerializer
+from api.serializers import TokenSerializer, UserSerializer, UserSerializerWithoutRole
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -38,21 +38,22 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
     permission_classes = [IsAdmin]
 
-    @action(detail=False, methods=['get', 'patch'], permission_classes=[IsMeRequest])
+
+    @action(detail=False, methods=['get', 'patch'],permission_classes=[IsAuthenticated])
     def me(self, request):
-        if request.method == 'GET':
-            user = request.user
-            serializer = self.get_serializer(user)
-            return Response(serializer.data)
-        elif request.method == 'PATCH':
-            user = request.user
+        user = request.user
+        if self.request.user.is_superuser or self.request.user.role == 'admin':
             serializer = UserSerializer(user, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors)
-
-
+        else:
+            serializer = UserSerializerWithoutRole(user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors)
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
