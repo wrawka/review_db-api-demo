@@ -11,7 +11,7 @@ from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
                                            FilterSet)
 from rest_framework import (filters, generics, mixins, pagination, permissions,
                             viewsets)
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from reviews.models import Category, Genre, Review, Title
 from users.models import Code, User
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -136,6 +136,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
     pagination_class = pagination.LimitOffsetPagination
     permission_classes = [IsAdmin|IsModerator|IsAuthenticated|IsAuthorOrReadOnly]
+    # permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')

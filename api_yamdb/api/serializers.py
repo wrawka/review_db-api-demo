@@ -43,17 +43,25 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username')
+        read_only=True, slug_field='username', default=serializers.CurrentUserDefault())
     title = serializers.SlugRelatedField(
-        read_only=True, slug_field='pk')
+        read_only=True, slug_field='id', default=0)
 
     def validate_score(self, value):
         if value not in range(1, 11):
             raise serializers.ValidationError('Оценка может быть от 1 до 10.')
+        return value
 
     class Meta:
         model = Review
         fields = '__all__'
+
+        validators = [
+            validators.UniqueTogetherValidator(
+                queryset=Review.objects.all(),
+                fields=('author', 'title')
+            )
+        ]
 
 
 class GenreSerializer(serializers.ModelSerializer):
