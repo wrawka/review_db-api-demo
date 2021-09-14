@@ -1,7 +1,8 @@
-from rest_framework import serializers, validators
-from users.models import User, Code, CHOICES
-from reviews.models import Comment, Review, Title, Genre, Category
 import datetime as dt
+
+from rest_framework import serializers, validators
+from reviews.models import Category, Comment, Genre, Review, Title
+from users.models import CHOICES, Code, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,6 +13,15 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'first_name', 'last_name', 'bio',
                   'role')
         model = User
+
+
+class UserSerializerWithoutRole(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('username', 'email', 'first_name', 'last_name', 'bio',
+                  'role')
+        model = User
+        read_only_fields = ('role',)
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -74,8 +84,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class TitleSerializer(serializers.ModelSerializer):
     score = serializers.SerializerMethodField()
-    genre = GenreSerializer(many=True, read_only=True)
-    category = serializers.StringRelatedField()
+    genre = serializers.SlugRelatedField(queryset=Genre.objects.all(), slug_field='slug', many=True)
+    category = serializers.SlugRelatedField(queryset=Category.objects.all(), slug_field='slug')
 
     class Meta:
         model = Title
@@ -88,4 +98,5 @@ class TitleSerializer(serializers.ModelSerializer):
         return value
 
     def get_score(self, obj):
+
         pass

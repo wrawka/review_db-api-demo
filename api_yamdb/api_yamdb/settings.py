@@ -22,12 +22,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'users',
-    'djoser',
+    'django_filters',
     'rest_framework',
     'api',
     'reviews',
-    'django_filters',
+    'users',
 ]
 
 MIDDLEWARE = [
