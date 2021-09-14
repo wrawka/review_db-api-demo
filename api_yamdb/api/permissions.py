@@ -40,8 +40,17 @@ class IsAdmin(permissions.BasePermission):
         return (request.user.is_authenticated and request.user.role == 'admin'
                 or request.user.is_superuser)
 
+class IsMeRequest(permissions.BasePermission):
+    """
+    Custom permission to /api/v1/users/me/ endpoint.
+    """
 
-
+    def has_object_permission(self, request, view, obj):
+        if request.method == 'PATCH':
+            return request.user.is_authenticated and request.user.role == 'admin'
+        elif request.method == 'GET':
+            return (request.user.is_authenticated and obj.author == request.user) or \
+                   (request.user.is_authenticated and request.user.role == 'admin')
 
 # class UserPermission(permissions.BasePermission):
 

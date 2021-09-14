@@ -1,7 +1,8 @@
-from rest_framework import serializers, validators
-from users.models import User, Code, CHOICES
-from reviews.models import Comment, Review, Title, Genre, Category
 import datetime as dt
+
+from rest_framework import serializers, validators
+from reviews.models import Category, Comment, Genre, Review, Title
+from users.models import CHOICES, Code, User
 
 
 class UserSerializer(serializers.ModelSerializer):

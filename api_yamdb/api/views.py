@@ -1,30 +1,27 @@
 from random import randint
 
-from rest_framework.serializers import Serializer
-
-from api.permissions import ReadOnly, IsAdmin, IsModerator, IsAuthorOrReadOnly
-from api.serializers import (TokenSerializer,
-                             UserSerializer)
+from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly, IsMeRequest
+from api.serializers import TokenSerializer, UserSerializer
 from django.core.mail import send_mail
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
                                            FilterSet)
 from rest_framework import (filters, generics, mixins, pagination, permissions,
-                            viewsets)
+                            status, viewsets)
+from rest_framework.decorators import action, permission_classes
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.serializers import Serializer
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Genre, Review, Title
 from users.models import Code, User
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from . import serializers
-from .serializers import CategorySerializer, GenreSerializer, TitleSerializer,\
-    RegistrationSerializer
-from rest_framework.response import Response
-from django.http import HttpResponse
-from rest_framework.views import APIView
-from rest_framework import status
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import action, permission_classes
+from .serializers import (CategorySerializer, GenreSerializer,
+                          RegistrationSerializer, TitleSerializer)
 
 
 def get_tokens_for_user(user):
@@ -37,15 +34,25 @@ def get_tokens_for_user(user):
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = serializers.UserSerializer
+    serializer_class = UserSerializer
     lookup_field = 'username'
     permission_classes = [IsAdmin]
 
-    @action(detail=False, methods=['get', 'patch'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get', 'patch'], permission_classes=[IsMeRequest])
     def me(self, request):
-        user = request.user
-        serializer = self.get_serializer(user)
-        return Response(serializer.data)
+        if request.method == 'GET':
+            user = request.user
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+        elif request.method == 'PATCH':
+            user = request.user
+            serializer = UserSerializer(user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors)
+
+
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
