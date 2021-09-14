@@ -1,8 +1,8 @@
 from django.contrib.auth.models import AbstractUser
-from django.db import models
-from rest_framework.response import Response
-from rest_framework import status
 from django.core.exceptions import ValidationError
+from django.db import models
+from rest_framework import status
+from rest_framework.response import Response
 
 
 def username_validator(name):
