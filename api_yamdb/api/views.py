@@ -156,6 +156,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title = get_object_or_404(Title, pk=title_id)
         serializer.save(title=title, author=self.request.user)
 
+    def perform_update(self, serializer):
+        return super().perform_update(serializer)
+
 
 class CreateRetrieveDestroyViewSet(
     mixins.CreateModelMixin,

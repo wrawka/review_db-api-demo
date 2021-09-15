@@ -1,6 +1,6 @@
 import datetime as dt
 
-from rest_framework import serializers, validators
+from rest_framework import serializers, validators, exceptions
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import CHOICES, Code, User
 
@@ -64,12 +64,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username', default=serializers.CurrentUserDefault())
     title = serializers.SlugRelatedField(
-        read_only=True, slug_field='id')
-
-    def validate_score(self, value):
-        if value not in range(1, 11):
-            raise serializers.ValidationError('Оценка может быть от 1 до 10.')
-        return value
+        read_only=True, slug_field='id', default=0)
 
     class Meta:
         model = Review
@@ -86,6 +81,13 @@ class ReviewSerializer(serializers.ModelSerializer):
         if value not in range(1, 11):
             raise serializers.ValidationError('Оценка может быть от 1 до 10.')
         return value
+
+    def validate(self, attrs):
+        title = self.context.get('view').kwargs.get('title_id')
+        review = Review.objects.filter(title=title, author=self.context['request'].user)
+        if review.exists():
+            raise exceptions.ValidationError('You already have a review on this title')
+        return super().validate(attrs)
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -105,13 +107,13 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    score = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
     genre = serializers.SlugRelatedField(queryset=Genre.objects.all(), slug_field='slug', many=True)
     category = serializers.SlugRelatedField(queryset=Category.objects.all(), slug_field='slug')
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category', 'score')
+        fields = ('id', 'name', 'year', 'description', 'genre', 'category', 'rating')
 
     def validate_year(self, value):
         year = dt.datetime.today().year
@@ -119,6 +121,9 @@ class TitleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Год не может быть будущим!')
         return value
 
-    def get_score(self, obj):
-
-        pass
+    def get_rating(self, obj):
+        reviews = [review.score for review in obj.reviews.all()]
+        if reviews:
+            return sum(reviews) / len(reviews)
+        else:
+            return None

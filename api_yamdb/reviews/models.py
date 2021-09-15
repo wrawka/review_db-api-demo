@@ -68,6 +68,7 @@ class Category(models.Model):
 class Title(models.Model):
     name = models.CharField(max_length=150)
     year = models.IntegerField()
+    rating = models.IntegerField(null=True, blank=True, default=None)
     description = models.TextField(blank=True, null=True)
     genre = models.ManyToManyField(
         Genre,
