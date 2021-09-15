@@ -34,7 +34,7 @@ class Review(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=('author', 'title'), name='single_review_per_title')
-        ]        
+        ]
 
     def __str__(self) -> str:
         return f'{self.text[:20]}[...] - {self.author}@{self.pub_date}'
@@ -73,7 +73,6 @@ class Title(models.Model):
     genre = models.ManyToManyField(
         Genre,
         through='TitleGenre',
-        # null=True,
         related_name='titles',
     )
     category = models.ForeignKey(
