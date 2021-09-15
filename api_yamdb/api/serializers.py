@@ -1,8 +1,16 @@
 import datetime as dt
 
-from rest_framework import serializers, validators
+from rest_framework import serializers, validators, exceptions
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import CHOICES, Code, User
+
+
+class SelfSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('username', 'email', 'first_name', 'last_name', 'bio')
+        read_only_fields = ('role',)
+        model = User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('username', 'email', 'first_name', 'last_name', 'bio',
                   'role')
+        read_only_fields = ('role',)
         model = User
 
 
@@ -41,10 +50,8 @@ class TokenSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username')
-    title = serializers.SlugRelatedField(
-        read_only=True, slug_field='pk')
     review = serializers.SlugRelatedField(
-        read_only=True, slug_field='pk')
+        read_only=True, slug_field='id')
 
     class Meta:
         model = Comment
@@ -53,18 +60,25 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username')
+        read_only=True, slug_field='username', default=serializers.CurrentUserDefault())
     title = serializers.SlugRelatedField(
-        read_only=True, slug_field='pk')
+        read_only=True, slug_field='id', default=0)
+
+    class Meta:
+        model = Review
+        fields = '__all__'
 
     def validate_score(self, value):
         if value not in range(1, 11):
             raise serializers.ValidationError('Оценка может быть от 1 до 10.')
         return value
 
-    class Meta:
-        model = Review
-        fields = '__all__'
+    def validate(self, attrs):
+        title = self.context.get('view').kwargs.get('title_id')
+        review = Review.objects.filter(title=title, author=self.context['request'].user)
+        if self.context['request'].method == 'POST' and review.exists():
+            raise exceptions.ValidationError('You already have a review on this title')
+        return super().validate(attrs)
 
 
 class GenreSerializer(serializers.ModelSerializer):

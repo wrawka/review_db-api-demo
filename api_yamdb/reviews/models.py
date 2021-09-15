@@ -14,7 +14,7 @@ class Comment(models.Model):
         'Дата публикации комментария', auto_now_add=True)
 
     def __str__(self) -> str:
-        return f'{self.text[20:]}[...] - {self.author}@{self.pub_date}'
+        return f'{self.text[:20]}[...] - {self.author}@{self.pub_date}'
 
 
 class Review(models.Model):
@@ -30,8 +30,14 @@ class Review(models.Model):
     pub_date = models.DateTimeField(
         'Дата публикации отзыва', auto_now_add=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('author', 'title'), name='single_review_per_title')
+        ]        
+
     def __str__(self) -> str:
-        return f'{self.text[20:]}[...] - {self.author}@{self.pub_date}'
+        return f'{self.text[:20]}[...] - {self.author}@{self.pub_date}'
 
 
 class Genre(models.Model):
@@ -62,6 +68,7 @@ class Category(models.Model):
 class Title(models.Model):
     name = models.CharField(max_length=150)
     year = models.IntegerField()
+    rating = models.IntegerField(null=True, blank=True, default=None)
     description = models.TextField(blank=True, null=True)
     genre = models.ManyToManyField(
         Genre,

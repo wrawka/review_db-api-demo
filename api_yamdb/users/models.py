@@ -20,7 +20,6 @@ CHOICES = (
 
 class User(AbstractUser):
     username = models.CharField(
-        # default='user',
         max_length=150,
         unique=True,
         validators=[username_validator]
@@ -37,14 +36,8 @@ class User(AbstractUser):
     )
     role = models.TextField(
         'Роль',
-        blank=True,
-        null=True,
+        # editable=False,
         choices=CHOICES,
-    )
-    confirmation_code = models.PositiveIntegerField(
-        'Code',
-        blank=True,
-        null=True,
     )
     confirmation_code = models.PositiveIntegerField(
         'Code',
