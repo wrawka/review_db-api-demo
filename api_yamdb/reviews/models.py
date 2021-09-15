@@ -1,5 +1,5 @@
-from django.contrib.auth import get_user_model
-from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
+from django.core.validators import (MaxValueValidator, MinValueValidator,
+                                    RegexValidator)
 from django.db import models
 from users.models import User
 
@@ -25,7 +25,8 @@ class Review(models.Model):
         "Title", on_delete=models.CASCADE, related_name='reviews')
     score = models.IntegerField(
         'Оценка',
-        validators=[MinValueValidator(1), MaxValueValidator(10)])
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+    )
     pub_date = models.DateTimeField(
         'Дата публикации отзыва', auto_now_add=True)
 
@@ -65,7 +66,7 @@ class Title(models.Model):
     genre = models.ManyToManyField(
         Genre,
         through='TitleGenre',
-        null=True,
+        # null=True,
         related_name='titles',
     )
     category = models.ForeignKey(

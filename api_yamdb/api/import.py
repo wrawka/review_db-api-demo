@@ -1,4 +1,5 @@
-import csv, sqlite3
+import csv
+import sqlite3
 
 con = sqlite3.connect('/Users/maximagarev/Dev/api_yamdb/api_yamdb/db.sqlite3')
 cur = con.cursor()

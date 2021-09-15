@@ -2,8 +2,8 @@ import csv
 import sqlite3
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-from django.core.management.base import BaseCommand, CommandError, CommandParser, LabelCommand
-
+from django.core.management.base import (BaseCommand, CommandError,
+                                         CommandParser, LabelCommand)
 
 connection = sqlite3.connect('db.sqlite3')
 cursor = connection.cursor()

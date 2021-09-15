@@ -1,7 +1,8 @@
-from rest_framework import serializers, validators
-from users.models import User, Code, CHOICES
-from reviews.models import Comment, Review, Title, Genre, TitleGenre, Category
 import datetime as dt
+
+from rest_framework import serializers, validators
+from reviews.models import Category, Comment, Genre, Review, Title
+from users.models import CHOICES, Code, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,6 +13,15 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'first_name', 'last_name', 'bio',
                   'role')
         model = User
+
+
+class UserSerializerWithoutRole(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('username', 'email', 'first_name', 'last_name', 'bio',
+                  'role')
+        model = User
+        read_only_fields = ('role',)
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -50,6 +60,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     def validate_score(self, value):
         if value not in range(1, 11):
             raise serializers.ValidationError('Оценка может быть от 1 до 10.')
+        return value
 
     class Meta:
         model = Review
