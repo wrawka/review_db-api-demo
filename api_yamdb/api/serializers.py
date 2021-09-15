@@ -91,10 +91,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class GenreSerializer(serializers.ModelSerializer):
+    queryset = Genre.objects.all()
 
     class Meta:
         model = Genre
-        fields = ('id', 'name', 'slug')
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
 
@@ -102,7 +103,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ('id', 'name', 'slug')
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
 
@@ -113,7 +114,7 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category', 'rating')
+        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
 
     def validate_year(self, value):
         year = dt.datetime.today().year
@@ -121,9 +122,15 @@ class TitleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Год не может быть будущим!')
         return value
 
+    def to_representation(self, instance):
+        title = super().to_representation(instance)
+        title['genre'] = GenreSerializer(instance.genre, many=True).data
+        title['category'] = CategorySerializer(instance.category, source=title).data
+        return title
+
     def get_rating(self, obj):
         reviews = [review.score for review in obj.reviews.all()]
         if reviews:
-            return sum(reviews) / len(reviews)
+            return round(sum(reviews)/len(reviews))
         else:
             return None

@@ -13,7 +13,7 @@ def username_validator(name):
 
 CHOICES = (
     ('user', 'юзер'),
-    ('moderator', 'модераторв'),
+    ('moderator', 'модератор'),
     ('admin', 'админ')
 )
 
