@@ -88,18 +88,6 @@ class RegistrationViewSet(generics.ListCreateAPIView):
                         headers=headers)
 
 
-        #User.objects.create(
-        #    username=serializer.validated_data['username'],
-        #    email=serializer.validated_data['email'],
-        #    role='user',
-        #    confirmation_code=confirmation_code
-        #)
-        #Registration.objects.create(
-        #    username=serializer.validated_data['username'],
-        #    confirmation_code=confirmation_code
-        #)
-
-
 class APITokenView(APIView):
     http_method_names = ['post']
     permission_classes = [AllowAny]
@@ -126,7 +114,8 @@ class APITokenView(APIView):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CommentSerializer
     pagination_class = pagination.LimitOffsetPagination
-    permission_classes = [IsAuthorOrReadOnly|IsModerator|IsAdmin]
+    permission_classes = [IsAuthorOrReadOnly|IsModerator]
+    # permission_classes = [IsAuthorOrReadOnly|IsModerator|IsAdmin]
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -142,16 +131,16 @@ class CommentViewSet(viewsets.ModelViewSet):
         review = get_object_or_404(Review, pk=review_id, title=title)
         serializer.save(review=review, author=self.request.user)
 
-    def perform_update(self, serializer):
-        if serializer.instance.author != self.request.user:
-            raise exceptions.PermissionDenied("Изменение чужого контента запрещено!")
-        super().perform_update(serializer)
+    # def perform_update(self, serializer):
+    #     if serializer.instance.author != self.request.user:
+    #         raise exceptions.PermissionDenied("Изменение чужого контента запрещено!")
+    #     super().perform_update(serializer)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
     pagination_class = pagination.LimitOffsetPagination
-    permission_classes = [IsAuthorOrReadOnly|IsAuthenticated|IsModerator|IsAdmin]
+    permission_classes = [IsAuthorOrReadOnly|IsModerator]
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -163,10 +152,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title = get_object_or_404(Title, pk=title_id)
         serializer.save(title=title, author=self.request.user)
 
-    def perform_update(self, serializer):
-        if serializer.instance.author != self.request.user:
-            raise exceptions.PermissionDenied("Изменение чужого контента запрещено!")
-        super().perform_update(serializer)
+    # def perform_update(self, serializer):
+    #     if serializer.instance.author != self.request.user:
+    #         raise exceptions.PermissionDenied("Изменение чужого контента запрещено!")
+    #     super().perform_update(serializer)
 
 
 class CreateRetrieveDestroyViewSet(

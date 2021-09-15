@@ -14,7 +14,7 @@ class Comment(models.Model):
         'Дата публикации комментария', auto_now_add=True)
 
     def __str__(self) -> str:
-        return f'{self.text[20:]}[...] - {self.author}@{self.pub_date}'
+        return f'{self.text[:20]}[...] - {self.author}@{self.pub_date}'
 
 
 class Review(models.Model):
@@ -37,7 +37,7 @@ class Review(models.Model):
         ]        
 
     def __str__(self) -> str:
-        return f'{self.text[20:]}[...] - {self.author}@{self.pub_date}'
+        return f'{self.text[:20]}[...] - {self.author}@{self.pub_date}'
 
 
 class Genre(models.Model):

@@ -50,8 +50,6 @@ class TokenSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username')
-    # title = serializers.SlugRelatedField(
-    #     read_only=True, slug_field='id')
     review = serializers.SlugRelatedField(
         read_only=True, slug_field='id')
 
@@ -70,13 +68,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = '__all__'
 
-        validators = [
-            validators.UniqueTogetherValidator(
-                queryset=Review.objects.all(),
-                fields=['author', 'title']
-            )
-        ]
-
     def validate_score(self, value):
         if value not in range(1, 11):
             raise serializers.ValidationError('Оценка может быть от 1 до 10.')
@@ -85,7 +76,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         title = self.context.get('view').kwargs.get('title_id')
         review = Review.objects.filter(title=title, author=self.context['request'].user)
-        if review.exists():
+        if self.context['request'].method == 'POST' and review.exists():
             raise exceptions.ValidationError('You already have a review on this title')
         return super().validate(attrs)
 
