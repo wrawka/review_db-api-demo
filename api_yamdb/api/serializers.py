@@ -1,6 +1,6 @@
 from rest_framework import serializers, validators
 from users.models import User, Code, CHOICES
-from reviews.models import Comment, Review, Title, Genre, Category
+from reviews.models import Comment, Review, Title, Genre, TitleGenre, Category
 import datetime as dt
 
 
@@ -74,13 +74,13 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    score = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
     genre = serializers.SlugRelatedField(queryset=Genre.objects.all(), slug_field='slug', many=True)
     category = serializers.SlugRelatedField(queryset=Category.objects.all(), slug_field='slug')
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category', 'score')
+        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
 
     def validate_year(self, value):
         year = dt.datetime.today().year
@@ -89,23 +89,14 @@ class TitleSerializer(serializers.ModelSerializer):
         return value
 
     def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response['category'] = CategorySerializer(instance.category).data
-        # genres = []
-        # for genre in response['genre']:
-        #     pass
-        #     # print(dir(GenreSerializer(genre)))
-        #     print(GenreSerializer(genre).data)
-        # print('!')
-        return response
+        title = super().to_representation(instance)
+        title['genre'] = GenreSerializer(instance.genre, many=True).data
+        title['category'] = CategorySerializer(instance.category, source=title).data
+        return title
 
-    # def to_internal_value(self, data):
-    #     self.fields['slug'] = serializers.SlugRelatedField(
-    #         queryset=Category.objects.all(),
-    #         slug_field='slug'
-    #     )
-    #     return super(TitleSerializer, self).to_internal_value(data)
-
-
-    def get_score(self, obj):
-        pass
+    def get_rating(self, obj):
+        reviews = [review.score for review in obj.reviews.all()]
+        if reviews:
+            return round(sum(reviews)/len(reviews))
+        else:
+            return None
