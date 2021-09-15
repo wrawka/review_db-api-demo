@@ -142,12 +142,16 @@ class CommentViewSet(viewsets.ModelViewSet):
         review = get_object_or_404(Review, pk=review_id, title=title)
         serializer.save(review=review, author=self.request.user)
 
+    def perform_update(self, serializer):
+        if serializer.instance.author != self.request.user:
+            raise exceptions.PermissionDenied("Изменение чужого контента запрещено!")
+        super().perform_update(serializer)
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
     pagination_class = pagination.LimitOffsetPagination
     permission_classes = [IsAuthorOrReadOnly|IsAuthenticated|IsModerator|IsAdmin]
-    # permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
