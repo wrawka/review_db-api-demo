@@ -1,14 +1,12 @@
 from random import randint
 
-from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly, IsMeRequest
-from api.serializers import TokenSerializer, UserSerializer, UserSerializerWithoutRole
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
                                            FilterSet)
 from rest_framework import (filters, generics, mixins, pagination, permissions,
-                            status, viewsets)
+                            status, viewsets, exceptions)
 from rest_framework.decorators import action, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -18,6 +16,11 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Genre, Review, Title
 from users.models import Code, User
+
+from api.permissions import (IsAdmin, IsAuthorOrReadOnly, IsMeRequest,
+                             IsModerator, ReadOnly)
+from api.serializers import (TokenSerializer, UserSerializer,
+                             UserSerializerWithoutRole)
 
 from . import serializers
 from .serializers import (CategorySerializer, GenreSerializer,
@@ -123,7 +126,7 @@ class APITokenView(APIView):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CommentSerializer
     pagination_class = pagination.LimitOffsetPagination
-    permission_classes = [IsAdmin|IsModerator|IsAuthorOrReadOnly]
+    permission_classes = [IsAuthorOrReadOnly|IsModerator|IsAdmin]
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -137,7 +140,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         review_id = self.kwargs.get('review_id')
         title = get_object_or_404(Title, pk=title_id)
         review = get_object_or_404(Review, pk=review_id, title=title)
-        serializer.save(title=title, review=review, author=self.request.user)
+        serializer.save(review=review, author=self.request.user)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -157,7 +160,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(title=title, author=self.request.user)
 
     def perform_update(self, serializer):
-        return super().perform_update(serializer)
+        if serializer.instance.author != self.request.user:
+            raise exceptions.PermissionDenied("Изменение чужого контента запрещено!")
+        super().perform_update(serializer)
 
 
 class CreateRetrieveDestroyViewSet(

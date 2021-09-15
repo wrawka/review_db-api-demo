@@ -50,8 +50,8 @@ class TokenSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username')
-    title = serializers.SlugRelatedField(
-        read_only=True, slug_field='id')
+    # title = serializers.SlugRelatedField(
+    #     read_only=True, slug_field='id')
     review = serializers.SlugRelatedField(
         read_only=True, slug_field='id')
 
