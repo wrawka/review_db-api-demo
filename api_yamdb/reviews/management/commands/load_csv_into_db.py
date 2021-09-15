@@ -1,9 +1,8 @@
 import csv
 import sqlite3
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Optional
 
-from django.core.management.base import (BaseCommand, CommandError,
-                                         CommandParser, LabelCommand)
+from django.core.management.base import (BaseCommand, CommandParser)
 
 connection = sqlite3.connect('db.sqlite3')
 cursor = connection.cursor()
@@ -27,9 +26,9 @@ class Command(BaseCommand):
 
         if options['database']:
             # self.stdout.write('Database: %s' % options['database'])
-            connection = sqlite3.connect(options['database'])
+            # connection = sqlite3.connect(options['database'])
             # self.stdout.write('Have --database arg')
-        
+            ...
         for file in options['files']:
             with open(file, 'r') as fin:
                 table_name = file[:-4]
@@ -38,6 +37,5 @@ class Command(BaseCommand):
                 cursor.execute(
                     f"CREATE TABLE {table_name} ({fieldnames});")
                 ...
-
 
         self.stdout.write('Handle works!!!')
