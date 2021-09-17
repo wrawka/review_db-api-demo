@@ -1,3 +1,4 @@
+from textwrap import shorten
 from django.core.validators import (MaxValueValidator, MinValueValidator,
                                     RegexValidator)
 from django.db import models
@@ -14,7 +15,7 @@ class Comment(models.Model):
         'Дата публикации комментария', auto_now_add=True)
 
     def __str__(self) -> str:
-        return f'{self.text[:20]}[...] - {self.author}@{self.pub_date}'
+        return f'{shorten(self.text)} - {self.author}@{self.pub_date}'
 
 
 class Review(models.Model):
@@ -23,7 +24,7 @@ class Review(models.Model):
         User, on_delete=models.CASCADE, related_name='reviews')
     title = models.ForeignKey(
         "Title", on_delete=models.CASCADE, related_name='reviews')
-    score = models.IntegerField(
+    score = models.PositiveSmallIntegerField(
         'Оценка',
         validators=[MinValueValidator(1), MaxValueValidator(10)],
     )
@@ -37,7 +38,7 @@ class Review(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f'{self.text[:20]}[...] - {self.author}@{self.pub_date}'
+        return f'{shorten(self.text)} - {self.author}@{self.pub_date}'
 
 
 class Genre(models.Model):
