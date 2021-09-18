@@ -1,10 +1,14 @@
-from random import randint
+import uuid
 
+from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
+from api.serializers import UserSerializer
+from django.conf import settings as conf_settings
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.db.models.functions import Round
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
+from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
+                                           FilterSet)
 from rest_framework import (filters, generics, mixins, pagination, status,
                             viewsets)
 from rest_framework.decorators import action
@@ -15,9 +19,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
-from api.filters import TitlesFilter
-from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
-from api.serializers import UserSerializer, UserSerializerWithoutRole
+
 from . import serializers
 
 
@@ -39,68 +41,57 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes=[IsAuthenticated])
     def me(self, request):
         user = request.user
-        if self.request.user.is_superuser or self.request.user.role == 'admin':
-            serializer = UserSerializer(user, data=request.data, partial=True)
-            if serializer.is_valid():
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            if request.method == 'PATCH' and not (self.request.user.is_superuser or self.request.user.is_admin):
+                serializer.save(role=self.request.user.role,)
+            else:
                 serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors)
-        else:
-            serializer = UserSerializerWithoutRole(user, data=request.data,
-                                                   partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors)
+            return Response(serializer.data)
+        return Response(serializer.errors)
 
 
-class RegistrationViewSet(generics.ListCreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = serializers.RegistrationSerializer
+class RegistrationViewSet(APIView):
     http_method_names = ['post']
-    permission_classes = [AllowAny]
-
-    def perform_create(self, serializer):
-        confirmation_code = str(randint(1000, 9999))
-        send_mail(
-            'Confirmation code for registration',
-            f'{confirmation_code}',
-            'from@example.com',
-            [serializer.validated_data['email']],
-            fail_silently=False,
-        )
-        serializer.save(
+    permission_classes = (AllowAny,)
+    def post(self, request):
+        serializer = serializers.RegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.data.get('email')
+        username = serializer.data.get('username')
+        confirmation_code = str(uuid.uuid1())
+        user, created = User.objects.get_or_create(
+            username=username,
+            email=email,
             role='user',
             confirmation_code=confirmation_code
         )
-
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_200_OK,
-                        headers=headers)
+        if not created:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        send_mail(
+            'Confirmation code for registration',
+            confirmation_code,
+            conf_settings.FROM_EMAIL,
+            [serializer.validated_data['email']],
+            fail_silently=False,
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class APITokenView(APIView):
     http_method_names = ['post']
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
 
     def post(self, request):
         serializer = serializers.TokenSerializer(data=request.data)
-        if serializer.is_valid():
-            user = get_object_or_404(
-                User,
-                username=serializer.validated_data['username']
-            )
-            code = serializer.validated_data['confirmation_code']
-            if user.confirmation_code == code:
-                return Response(get_tokens_for_user(user),
-                                status=status.HTTP_200_OK)
-            elif user.is_superuser:
-                return Response(get_tokens_for_user(user),
-                                status=status.HTTP_200_OK)
+        serializer.is_valid(raise_exception=True)
+        user = get_object_or_404(
+            User,
+            username=serializer.validated_data['username']
+        )
+        code = serializer.validated_data['confirmation_code']
+        if user.confirmation_code == code:
+            return Response(get_tokens_for_user(user))
         return Response(
             {'Код введен неверно. Повторите попытку.'},
             status=status.HTTP_400_BAD_REQUEST
