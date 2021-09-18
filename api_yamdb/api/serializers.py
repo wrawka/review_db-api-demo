@@ -1,7 +1,7 @@
 import datetime as dt
 
 from rest_framework.validators import UniqueTogetherValidator
-from rest_framework import exceptions, serializers
+from rest_framework import serializers
 
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import CHOICES, Code, User
@@ -28,6 +28,15 @@ class SelfSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
 
     role = serializers.ChoiceField(choices=CHOICES, default='user')
+
+    class Meta:
+        fields = ('username', 'email', 'first_name', 'last_name', 'bio',
+                  'role')
+        read_only_fields = ('role',)
+        model = User
+
+
+class UserSerializerWithoutRole(serializers.ModelSerializer):
 
     class Meta:
         fields = ('username', 'email', 'first_name', 'last_name', 'bio',

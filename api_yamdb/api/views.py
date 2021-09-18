@@ -1,22 +1,20 @@
 import uuid
 
-from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
-from api.serializers import UserSerializer
 from django.conf import settings as conf_settings
 from django.core.mail import send_mail
 from django.db.models import Avg
-from django.db.models.functions import Round
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
-                                           FilterSet)
-from rest_framework import (filters, generics, mixins, pagination, status,
-                            viewsets)
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, mixins, pagination, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from api.filters import TitlesFilter
+from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
+from api.serializers import UserSerializer, UserSerializerWithoutRole
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
 
@@ -52,6 +50,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class RegistrationViewSet(APIView):
     http_method_names = ['post']
     permission_classes = (AllowAny,)
+
     def post(self, request):
         serializer = serializers.RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -141,8 +140,7 @@ class CreateRetrieveDestroyViewSet(
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
-        rating=Round(Avg('reviews__score'))
-    ).order_by('-id')
+        rating=Avg('reviews__score'))
     pagination_class = pagination.LimitOffsetPagination
     permission_classes = [IsAdmin | ReadOnly]
     filter_backends = (DjangoFilterBackend,)
