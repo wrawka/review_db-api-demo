@@ -3,6 +3,11 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 
+USER_ROLE = ('user', 'юзер')
+MODERATOR_ROLE = ('moderator', 'модератор')
+ADMIN_ROLE = ('admin', 'админ')
+
+
 def username_validator(name):
     if name == 'me':
         raise ValidationError("Username can't be 'me'")
@@ -11,9 +16,9 @@ def username_validator(name):
 
 
 CHOICES = (
-    ('user', 'юзер'),
-    ('moderator', 'модератор'),
-    ('admin', 'админ')
+    USER_ROLE,
+    MODERATOR_ROLE,
+    ADMIN_ROLE
 )
 
 
@@ -37,11 +42,19 @@ class User(AbstractUser):
         'Роль',
         choices=CHOICES,
     )
-    confirmation_code = models.PositiveIntegerField(
+    confirmation_code = models.TextField(
         'Code',
         blank=True,
         null=True,
     )
+
+    @property
+    def is_moderator(self):
+        if self.role == 'moderator':
+            return True
+        else:
+            return False
+
 
 
 class Code(models.Model):
@@ -51,4 +64,4 @@ class Code(models.Model):
         null=False,
         max_length=150
     )
-    confirmation_code = models.PositiveIntegerField('Code')
+    confirmation_code = models.TextField('Code')

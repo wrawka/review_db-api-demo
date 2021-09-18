@@ -1,5 +1,6 @@
-from random import randint
+import uuid
 
+from django.conf import settings as conf_settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
@@ -40,17 +41,13 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
         if self.request.user.is_superuser or self.request.user.role == 'admin':
             serializer = UserSerializer(user, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors)
         else:
             serializer = UserSerializerWithoutRole(user, data=request.data,
                                                    partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors)
 
 
 class RegistrationViewSet(generics.ListCreateAPIView):
@@ -60,11 +57,11 @@ class RegistrationViewSet(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        confirmation_code = str(randint(1000, 9999))
+        confirmation_code = str(uuid.uuid1())
         send_mail(
             'Confirmation code for registration',
-            f'{confirmation_code}',
-            'from@example.com',
+            confirmation_code,
+            conf_settings.FROM_EMAIL,
             [serializer.validated_data['email']],
             fail_silently=False,
         )
@@ -88,18 +85,14 @@ class APITokenView(APIView):
 
     def post(self, request):
         serializer = serializers.TokenSerializer(data=request.data)
-        if serializer.is_valid():
-            user = get_object_or_404(
-                User,
-                username=serializer.validated_data['username']
-            )
-            code = serializer.validated_data['confirmation_code']
-            if user.confirmation_code == code:
-                return Response(get_tokens_for_user(user),
-                                status=status.HTTP_200_OK)
-            elif user.is_superuser:
-                return Response(get_tokens_for_user(user),
-                                status=status.HTTP_200_OK)
+        serializer.is_valid(raise_exception=True)
+        user = get_object_or_404(
+            User,
+            username=serializer.validated_data['username']
+        )
+        code = serializer.validated_data['confirmation_code']
+        if user.confirmation_code == code:
+            return Response(get_tokens_for_user(user))
         return Response(
             {'Код введен неверно. Повторите попытку.'},
             status=status.HTTP_400_BAD_REQUEST

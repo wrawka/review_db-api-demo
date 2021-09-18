@@ -12,6 +12,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+FROM_EMAIL = 'from@example.com'
 
 # Application definition
 
