@@ -41,12 +41,10 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes=[IsAuthenticated])
     def me(self, request):
         user = request.user
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        serializer = UserSerializerWithoutRole(user, data=request.data,
+                                               partial=True)
         if serializer.is_valid():
-            if request.method == 'PATCH' and not (self.request.user.is_superuser or self.request.user.is_admin):
-                serializer.save(role=self.request.user.role,)
-            else:
-                serializer.save()
+            serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors)
 
@@ -106,15 +104,13 @@ class CommentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
         review_id = self.kwargs.get('review_id')
-        title = get_object_or_404(Title, pk=title_id)
-        review = get_object_or_404(Review, pk=review_id, title=title)
+        review = get_object_or_404(Review, pk=review_id, title__id=title_id)
         return review.comments.all()
 
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id')
         review_id = self.kwargs.get('review_id')
-        title = get_object_or_404(Title, pk=title_id)
-        review = get_object_or_404(Review, pk=review_id, title=title)
+        review = get_object_or_404(Review, pk=review_id, title__id=title_id)
         serializer.save(review=review, author=self.request.user)
 
 

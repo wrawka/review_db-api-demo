@@ -1,9 +1,20 @@
 import datetime as dt
 
+from rest_framework.validators import UniqueTogetherValidator
 from rest_framework import exceptions, serializers
 
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import CHOICES, Code, User
+
+
+class CurrentTitleDefault:
+    """
+    Специально для заполнения 'default=' для 'title' в сериализаторе
+    """
+    requires_context = True
+
+    def __call__(self, serializer_field):
+        return serializer_field.context['view'].kwargs['title_id']
 
 
 class SelfSerializer(serializers.ModelSerializer):
@@ -55,25 +66,22 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only=True, slug_field='username',
         default=serializers.CurrentUserDefault())
     title = serializers.SlugRelatedField(
-        read_only=True, slug_field='id', default=0)
+        read_only=True, slug_field='id', default=CurrentTitleDefault())
 
     class Meta:
         model = Review
         fields = '__all__'
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Review.objects.all(),
+                fields=['author', 'title']
+            )
+        ]
 
     def validate_score(self, value):
         if value not in range(1, 11):
             raise serializers.ValidationError('Оценка может быть от 1 до 10.')
         return value
-
-    def validate(self, attrs):
-        title = self.context.get('view').kwargs.get('title_id')
-        review = Review.objects.filter(
-            title=title, author=self.context['request'].user)
-        if self.context['request'].method == 'POST' and review.exists():
-            raise exceptions.ValidationError('You already have a review'
-                                             'on this title')
-        return super().validate(attrs)
 
 
 class GenreSerializer(serializers.ModelSerializer):
