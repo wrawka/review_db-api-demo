@@ -154,7 +154,7 @@ class CreateRetrieveDestroyViewSet(
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.annotate(rating=Round(Avg('reviews__score')))
+    queryset = Title.objects.annotate(rating=Avg('reviews__score')).order_by('-id')
     pagination_class = pagination.LimitOffsetPagination
     permission_classes = [IsAdmin | ReadOnly]
     filter_backends = (DjangoFilterBackend,)
