@@ -1,11 +1,13 @@
 import uuid
 
+from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
+from api.serializers import UserSerializer
 from django.conf import settings as conf_settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
                                            FilterSet)
-from rest_framework import (filters, generics, mixins, pagination, status,
+from rest_framework import (filters, mixins, pagination, status,
                             viewsets)
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -14,9 +16,6 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
-
-from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
-from api.serializers import UserSerializer, UserSerializerWithoutRole
 
 from . import serializers
 
@@ -37,7 +36,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get', 'patch'],
             permission_classes=[IsAuthenticated])
-
     def me(self, request):
         user = request.user
         serializer = UserSerializer(user, data=request.data, partial=True)

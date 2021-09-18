@@ -2,7 +2,7 @@ import csv
 import sqlite3
 from typing import Any, Optional
 
-from django.core.management.base import (BaseCommand, CommandParser)
+from django.core.management.base import BaseCommand, CommandParser
 
 connection = sqlite3.connect('db.sqlite3')
 cursor = connection.cursor()
