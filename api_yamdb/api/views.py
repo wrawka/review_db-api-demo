@@ -4,16 +4,19 @@ from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
 from api.serializers import UserSerializer
 from django.conf import settings as conf_settings
 from django.core.mail import send_mail
+from django.db.models import Avg
+from django.db.models.functions import Round
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
                                            FilterSet)
-from rest_framework import (filters, mixins, pagination, status,
+from rest_framework import (filters, generics, mixins, pagination, status,
                             viewsets)
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
 
@@ -140,23 +143,19 @@ class CreateRetrieveDestroyViewSet(
     pass
 
 
-class TitlesFilter(FilterSet):
-    category = CharFilter(field_name='category__slug', lookup_expr='icontains')
-    genre = CharFilter(field_name='genre__slug', lookup_expr='icontains')
-    name = CharFilter(field_name='name', lookup_expr='icontains')
-
-    class Meta:
-        model = Title
-        fields = ('category', 'genre', 'name', 'year')
-
-
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
-    serializer_class = serializers.TitleSerializer
+    queryset = Title.objects.annotate(
+        rating=Round(Avg('reviews__score'))
+    ).order_by('-id')
     pagination_class = pagination.LimitOffsetPagination
     permission_classes = [IsAdmin | ReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitlesFilter
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve' or self.action == 'list':
+            return serializers.TitleReadSerializer
+        return serializers.TitleCreateSerializer
 
 
 class GenreViewSet(CreateRetrieveDestroyViewSet):
