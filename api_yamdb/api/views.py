@@ -1,6 +1,11 @@
-from random import randint
+import uuid
 
+from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
+from api.serializers import UserSerializer
+from django.conf import settings as conf_settings
 from django.core.mail import send_mail
+from django.db.models import Avg
+from django.db.models.functions import Round
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import (CharFilter, DjangoFilterBackend,
                                            FilterSet)
@@ -11,11 +16,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
-
-from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
-from api.serializers import UserSerializer, UserSerializerWithoutRole
 
 from . import serializers
 
@@ -46,53 +49,47 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors)
 
 
-class RegistrationViewSet(generics.ListCreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = serializers.RegistrationSerializer
+class RegistrationViewSet(APIView):
     http_method_names = ['post']
-    permission_classes = [AllowAny]
-
-    def perform_create(self, serializer):
-        confirmation_code = str(randint(1000, 9999))
-        send_mail(
-            'Confirmation code for registration',
-            f'{confirmation_code}',
-            'from@example.com',
-            [serializer.validated_data['email']],
-            fail_silently=False,
-        )
-        serializer.save(
+    permission_classes = (AllowAny,)
+    def post(self, request):
+        serializer = serializers.RegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.data.get('email')
+        username = serializer.data.get('username')
+        confirmation_code = str(uuid.uuid1())
+        user, created = User.objects.get_or_create(
+            username=username,
+            email=email,
             role='user',
             confirmation_code=confirmation_code
         )
-
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_200_OK,
-                        headers=headers)
+        if not created:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        send_mail(
+            'Confirmation code for registration',
+            confirmation_code,
+            conf_settings.FROM_EMAIL,
+            [serializer.validated_data['email']],
+            fail_silently=False,
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class APITokenView(APIView):
     http_method_names = ['post']
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
 
     def post(self, request):
         serializer = serializers.TokenSerializer(data=request.data)
-        if serializer.is_valid():
-            user = get_object_or_404(
-                User,
-                username=serializer.validated_data['username']
-            )
-            code = serializer.validated_data['confirmation_code']
-            if user.confirmation_code == code:
-                return Response(get_tokens_for_user(user),
-                                status=status.HTTP_200_OK)
-            elif user.is_superuser:
-                return Response(get_tokens_for_user(user),
-                                status=status.HTTP_200_OK)
+        serializer.is_valid(raise_exception=True)
+        user = get_object_or_404(
+            User,
+            username=serializer.validated_data['username']
+        )
+        code = serializer.validated_data['confirmation_code']
+        if user.confirmation_code == code:
+            return Response(get_tokens_for_user(user))
         return Response(
             {'Код введен неверно. Повторите попытку.'},
             status=status.HTTP_400_BAD_REQUEST
@@ -142,23 +139,19 @@ class CreateRetrieveDestroyViewSet(
     pass
 
 
-class TitlesFilter(FilterSet):
-    category = CharFilter(field_name='category__slug', lookup_expr='icontains')
-    genre = CharFilter(field_name='genre__slug', lookup_expr='icontains')
-    name = CharFilter(field_name='name', lookup_expr='icontains')
-
-    class Meta:
-        model = Title
-        fields = ('category', 'genre', 'name', 'year')
-
-
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
-    serializer_class = serializers.TitleSerializer
+    queryset = Title.objects.annotate(
+        rating=Round(Avg('reviews__score'))
+    ).order_by('-id')
     pagination_class = pagination.LimitOffsetPagination
     permission_classes = [IsAdmin | ReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitlesFilter
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve' or self.action == 'list':
+            return serializers.TitleReadSerializer
+        return serializers.TitleCreateSerializer
 
 
 class GenreViewSet(CreateRetrieveDestroyViewSet):

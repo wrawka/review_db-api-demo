@@ -1,7 +1,8 @@
 import datetime as dt
 
-from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+from rest_framework import exceptions, serializers
+
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import CHOICES, Code, User
 
@@ -33,15 +34,6 @@ class UserSerializer(serializers.ModelSerializer):
                   'role')
         read_only_fields = ('role',)
         model = User
-
-
-class UserSerializerWithoutRole(serializers.ModelSerializer):
-
-    class Meta:
-        fields = ('username', 'email', 'first_name', 'last_name', 'bio',
-                  'role')
-        model = User
-        read_only_fields = ('role',)
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -109,8 +101,26 @@ class CategorySerializer(serializers.ModelSerializer):
         lookup_field = 'slug'
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    rating = serializers.SerializerMethodField()
+class TitleReadSerializer(serializers.ModelSerializer):
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(), slug_field='slug', many=True)
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(), slug_field='slug')
+    rating = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Title
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        title = super().to_representation(instance)
+        title['genre'] = GenreSerializer(instance.genre, many=True).data
+        title['category'] = CategorySerializer(
+            instance.category, source=title).data
+        return title
+
+
+class TitleCreateSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         queryset=Genre.objects.all(), slug_field='slug', many=True)
     category = serializers.SlugRelatedField(
@@ -118,8 +128,7 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'rating', 'description', 'genre',
-                  'category')
+        fields = '__all__'
 
     def validate_year(self, value):
         year = dt.datetime.today().year
@@ -133,10 +142,3 @@ class TitleSerializer(serializers.ModelSerializer):
         title['category'] = CategorySerializer(
             instance.category, source=title).data
         return title
-
-    def get_rating(self, obj):
-        reviews = [review.score for review in obj.reviews.all()]
-        if reviews:
-            return round(sum(reviews) / len(reviews))
-        else:
-            return None

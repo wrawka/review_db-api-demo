@@ -9,6 +9,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+FROM_EMAIL = 'from@example.com'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
