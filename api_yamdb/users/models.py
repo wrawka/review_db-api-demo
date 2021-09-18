@@ -50,11 +50,11 @@ class User(AbstractUser):
 
     @property
     def is_moderator(self):
-        if self.role == 'moderator':
-            return True
-        else:
-            return False
+        return self.role == 'moderator'
 
+    @property
+    def is_admin(self):
+        return self.role == 'admin'
 
 
 class Code(models.Model):

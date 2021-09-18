@@ -37,27 +37,36 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get', 'patch'],
             permission_classes=[IsAuthenticated])
+
     def me(self, request):
         user = request.user
-        if self.request.user.is_superuser or self.request.user.role == 'admin':
-            serializer = UserSerializer(user, data=request.data, partial=True)
-        else:
-            serializer = UserSerializerWithoutRole(user, data=request.data,
-                                                   partial=True)
+        serializer = UserSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            if request.method == 'PATCH' and not (self.request.user.is_superuser or self.request.user.is_admin):
+                serializer.save(role=self.request.user.role,)
+            else:
+                serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors)
 
 
-class RegistrationViewSet(generics.ListCreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = serializers.RegistrationSerializer
+class RegistrationViewSet(APIView):
     http_method_names = ['post']
-    permission_classes = [AllowAny]
-
-    def perform_create(self, serializer):
+    permission_classes = (AllowAny,)
+    def post(self, request):
+        serializer = serializers.RegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.data.get('email')
+        username = serializer.data.get('username')
         confirmation_code = str(uuid.uuid1())
+        user, created = User.objects.get_or_create(
+            username=username,
+            email=email,
+            role='user',
+            confirmation_code=confirmation_code
+        )
+        if not created:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         send_mail(
             'Confirmation code for registration',
             confirmation_code,
@@ -65,23 +74,12 @@ class RegistrationViewSet(generics.ListCreateAPIView):
             [serializer.validated_data['email']],
             fail_silently=False,
         )
-        serializer.save(
-            role='user',
-            confirmation_code=confirmation_code
-        )
-
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_200_OK,
-                        headers=headers)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class APITokenView(APIView):
     http_method_names = ['post']
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
 
     def post(self, request):
         serializer = serializers.TokenSerializer(data=request.data)
