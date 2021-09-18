@@ -3,6 +3,7 @@ import datetime as dt
 from django.core.validators import (MaxValueValidator, MinValueValidator,
                                     RegexValidator)
 from django.db import models
+
 from users.models import User
 
 
@@ -69,7 +70,9 @@ class Category(models.Model):
 
 class Title(models.Model):
     name = models.CharField(max_length=150)
-    year = models.IntegerField(validators=[MaxValueValidator(dt.datetime.now().year)])
+    year = models.IntegerField(
+        validators=[MaxValueValidator(dt.datetime.now().year)]
+    )
     description = models.TextField(blank=True, null=True)
     genre = models.ManyToManyField(
         Genre,

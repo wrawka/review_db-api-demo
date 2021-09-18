@@ -1,7 +1,7 @@
 from random import randint
 
 from django.core.mail import send_mail
-from django.db.models import Avg, Count
+from django.db.models import Avg
 from django.db.models.functions import Round
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -12,13 +12,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
-
+from api.filters import TitlesFilter
 from api.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
 from api.serializers import UserSerializer, UserSerializerWithoutRole
-from api.filters import TitlesFilter
-
 from . import serializers
 
 
@@ -154,7 +153,9 @@ class CreateRetrieveDestroyViewSet(
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.annotate(rating=Avg('reviews__score')).order_by('-id')
+    queryset = Title.objects.annotate(
+        rating=Round(Avg('reviews__score'))
+    ).order_by('-id')
     pagination_class = pagination.LimitOffsetPagination
     permission_classes = [IsAdmin | ReadOnly]
     filter_backends = (DjangoFilterBackend,)

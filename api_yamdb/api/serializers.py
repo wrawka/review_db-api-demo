@@ -1,8 +1,7 @@
 import datetime as dt
 
-from django.db.models import Count, Avg
-from django.db.models.functions import Round
 from rest_framework import exceptions, serializers
+
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import CHOICES, Code, User
 
