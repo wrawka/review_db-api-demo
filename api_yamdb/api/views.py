@@ -42,7 +42,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSerializerWithoutRole(user, data=request.data,
                                                partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(role=user.role)
         return Response(serializer.data)
 
 
@@ -71,7 +71,7 @@ class RegistrationViewSet(APIView):
             [serializer.validated_data['email']],
             fail_silently=False,
         )
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
 
 
 class APITokenView(APIView):
