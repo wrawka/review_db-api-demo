@@ -10,8 +10,6 @@ ADMIN_ROLE = ('admin', 'админ')
 def username_validator(name):
     if name == 'me':
         raise ValidationError("Username can't be 'me'")
-    else:
-        return name
 
 
 CHOICES = (
@@ -49,11 +47,11 @@ class User(AbstractUser):
 
     @property
     def is_moderator(self):
-        return self.role == 'moderator'
+        return self.role == MODERATOR_ROLE[0]
 
     @property
     def is_admin(self):
-        return self.role == 'admin'
+        return self.role == ADMIN_ROLE[0]
 
 
 class Code(models.Model):
