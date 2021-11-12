@@ -1,4 +1,5 @@
 # Yamdb
+[![CI](https://github.com/wrawka/api_yamdb/actions/workflows/django.yml/badge.svg?branch=master)](https://github.com/wrawka/api_yamdb/actions/workflows/django.yml)
 
 собирает отзывы (Review) пользователей на произведения (Titles). Произведения делятся на категории: «Книги», «Фильмы», «Музыка». Список категорий (Category) может быть расширен администратором (например, можно добавить категорию «Изобразительное искусство» или «Ювелирка»).
 Сами произведения в YaMDb не хранятся, здесь нельзя посмотреть фильм или послушать музыку.
