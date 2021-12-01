@@ -22,4 +22,5 @@ COPY api_yamdb/ /app
 WORKDIR /app
 
 # Выполнить запуск сервера разработки при старте контейнера.
-CMD ["python3", "manage.py", "runserver", "0:8000"]
+# CMD ["python3", "manage.py", "runserver", "0:8000"]
+CMD ["gunicorn", "api_yamdb.wsgi:application", "--bind", "0:8000"]
