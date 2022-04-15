@@ -1,5 +1,5 @@
-# Yamdb
-[![CI](https://github.com/wrawka/api_yamdb/actions/workflows/django.yml/badge.svg?branch=master)](https://github.com/wrawka/api_yamdb/actions/workflows/django.yml)
+# reviewDB API (demo)
+[![CI](https://github.com/wrawka/review_db-api-demo/actions/workflows/django.yml/badge.svg?branch=master)](https://github.com/wrawka/review_db-api-demo/actions/workflows/django.yml)
 
 собирает отзывы (Review) пользователей на произведения (Titles). Произведения делятся на категории: «Книги», «Фильмы», «Музыка». Список категорий (Category) может быть расширен администратором (например, можно добавить категорию «Изобразительное искусство» или «Ювелирка»).
 Сами произведения в YaMDb не хранятся, здесь нельзя посмотреть фильм или послушать музыку.
@@ -12,7 +12,7 @@
 Клонировать репозиторий и перейти в него в командной строке:
 
 ```
-git clone https://github.com/xxx/api_yamdb.git
+git clone https://github.com/xxx/review_db-api-demo.git
 ```
 
 ```
